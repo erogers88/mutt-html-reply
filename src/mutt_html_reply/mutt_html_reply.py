@@ -8,13 +8,14 @@ def main():
     """
     Create an Outlook-style HTML reply
     
-    mutt-html-reply [html reply] [html original message] [headers to include in quote]
+    mutt-html-reply [html reply] [html original message] [headers to include in quote] [output path]
     """
 
     # Get filepaths
     filepath_reply = sys.argv[1]
     filepath_original_msg = sys.argv[2]
     filepath_original_headers = sys.argv[3]
+    filepath_output = sys.argv[4]
 
     # Open files and get text
     with open(filepath_reply, 'r') as file:
@@ -37,7 +38,7 @@ def main():
     bs4_final.append(bs4_original_msg)
 
     # Write output
-    with open('/home/erik/temp/html-output.html', 'w') as file:
+    with open(filepath_output, 'w') as file:
         file.write(str(bs4_final))
 
 
