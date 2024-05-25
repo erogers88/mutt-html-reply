@@ -28,12 +28,13 @@ def main():
     # Convert HTML text to BeautifulSoup object and inline all CSS
     bs4_msg = BeautifulSoup(css_inline.inline(html_reply),'html.parser')
     bs4_original_msg = BeautifulSoup(css_inline.inline(html_original_msg), 'html.parser')
+    bs4_original_msg.html.unwrap()
+    bs4_original_msg.body.unwrap()
     bs4_original_headers = BeautifulSoup(_get_header_html(text_original_headers), 'html.parser')
 
     # Combine HTML together
-    bs4_final = BeautifulSoup()
-    bs4_final.append(bs4_msg)
-    bs4_final.append(BeautifulSoup('<hr>', 'html.parser'))
+    bs4_final = bs4_msg
+    bs4_final.append(BeautifulSoup('<hr></hr>', 'html.parser'))
     bs4_final.append(bs4_original_headers)
     bs4_final.append(bs4_original_msg)
 
@@ -42,10 +43,10 @@ def main():
         file.write(str(bs4_final))
 
 
-def _get_header_html(text):
+def _get_header_html(header_list):
     resorted_text = []
     for first in HEADER_FIRST_SORT_LIST_COMPARISON:
-        for header in text:
+        for header in header_list:
             if header[0] == first:
                 resorted_text.append(header)
     html_headers = "<p>\n"

@@ -1,3 +1,5 @@
 /env
 /dist
 /src/*.egg-info/*
+/tmp
+/src/mutt_html_reply/__pycache__/*
