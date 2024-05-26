@@ -17,7 +17,7 @@ maintainers = [
 ]
 description = "Create an Outlook-style HTML reply"
 readme = "README.md"
-license = "LICENSE"
+license = {file = "LICENSE"}
 keywords = ["mutt", "html", "email", "reply"]
 
 [project.scripts]
