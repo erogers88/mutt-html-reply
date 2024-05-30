@@ -58,6 +58,7 @@ def main():
     bs4_final = bs4_msg
     bs4_final.body.append(BeautifulSoup('<hr></hr>', 'html.parser')) #type: ignore
     bs4_final.body.append(bs4_original_headers) #type: ignore
+    bs4_final.body.append(BeautifulSoup('<br></br>', 'html.parser')) #type: ignore
     bs4_final.body.append(bs4_original_msg) #type: ignore
 
     # Write output
@@ -81,20 +82,32 @@ def _get_header_html(message):
 
 def _get_message_html(message):
     body = None
+    first_part = True
     if message.is_multipart():
         for part in message.walk():
             ctype = part.get_content_type()
             cdispo = str(part.get('Content-Disposition'))
+            cquote = str(part.get('Content-Transfer-Encoding'))
             if ctype == 'text/html' and 'attachment' not in cdispo:
-                body = part.get_payload()
-                break
-    else:
-        body = message.get_payload()
-
+                if first_part:
+                    if cquote == 'quoted-printable':
+                        body = part.get_payload(decode=True)
+                        first_part = False
+                    else:
+                        body = part.get_payload()
+                else:
+                    if cquote == 'quoted-printable':
+                        body = body + part.get_payload(decode=True)
+                    else:
+                        body = body + part.get_payload()
     if body is not None:
-        return str(body)
+        try:
+            return body.decode("utf-8")
+        except:
+            return body
     else:
         raise ValueError
+
 
 if __name__ == "__main__":
     main()
