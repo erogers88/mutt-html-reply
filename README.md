@@ -14,8 +14,8 @@ pip install mutt-html-reply
 
 ## Usage
 
-This command is meant to be embedded in a neomutt macro when replying, but can also be used as a standalone program.
+This command is meant to be embedded in a neomutt macro when replying, but can also be used as a standalone program. The original message ("-m" flag) must be a file. The reply and output can either come from a file or stdin/stdout.
 
 ```
-mutt-html-reply [html reply] [html original message] [headers to include in quote] [output path]
+mutt-html-reply [-h] [-m [MESSAGE]] [-r REPLY] [-o [OUTPUT]]
 ```
