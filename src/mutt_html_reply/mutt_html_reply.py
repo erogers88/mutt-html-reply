@@ -5,7 +5,6 @@ import sys
 from bs4 import BeautifulSoup, Doctype
 import css_inline
 
-HEADER_FIRST_SORT_LIST_COMPARISON = ['F','D','T','C','S']
 
 def main():
     """
@@ -30,18 +29,20 @@ def main():
 
     args = parser.parse_args()
 
-    # Get text/html
-    ## Get the reply html from file/stdin
+    # Get the reply html from file/stdin
     html_reply = args.reply.read()
 
-    ## Get the original headers and html from the original email (rfc822 format)
+    # Get the original headers and html from the original email (rfc822 format)
     rfc822_original = email.message_from_file(args.message)
     html_original_msg = _get_message_html(rfc822_original)
-    html_headers = _get_header_html(rfc822_original)
+    html_original_headers = _get_header_html(rfc822_original)
 
     # Convert HTML text to BeautifulSoup object and inline all CSS
+
+    ## reply
     bs4_msg = BeautifulSoup(css_inline.inline(html_reply),'html.parser')
 
+    ## message
     bs4_original_msg = BeautifulSoup(css_inline.inline(html_original_msg), 'html.parser')
     bs4_original_msg.html.unwrap() #type: ignore
     bs4_original_msg.body.unwrap() #type: ignore
@@ -50,9 +51,10 @@ def main():
         if isinstance(element, Doctype):
             element.extract()
 
-    bs4_original_headers = BeautifulSoup(html_headers, 'html.parser')
+    ## headers
+    bs4_original_headers = BeautifulSoup(html_original_headers, 'html.parser')
 
-    # Combine HTML together
+    # Combine converted HTML together
     bs4_final = bs4_msg
     bs4_final.body.append(BeautifulSoup('<hr></hr>', 'html.parser')) #type: ignore
     bs4_final.body.append(bs4_original_headers) #type: ignore
@@ -63,20 +65,36 @@ def main():
 
 
 def _get_header_html(message):
-    #resorted_text = []
-    #for first in HEADER_FIRST_SORT_LIST_COMPARISON:
-    #    for header in header_list:
-    #        if header[0] == first:
-    #            resorted_text.append(html.escape(header))
-    #html_headers = "<p>"
-    #for header in resorted_text:
-    #    html_headers = html_headers + '<br>' + header
-    #html_headers = html_headers + "</p>\n"
-    return "<hr><p>test headers html</p>"
+    headers = ''
+    if message['from'] is not None:
+        headers = '<b>From</b>: ' + html.escape(message['from']) + '<br></br>'
+    if message['date'] is not None:
+        headers = headers + '<b>Date</b>: ' + html.escape(message['date']) + '<br></br>'
+    if message['to'] is not None:
+        headers = headers + '<b>To</b>: ' + html.escape(message['to']) + '<br></br>'
+    if message['cc'] is not None:
+        headers = headers + '<b>Cc</b>: ' + html.escape(message['cc']) + '<br></br>'
+    if message['subject'] is not None:
+        headers = headers + '<b>Subject</b>: ' + html.escape(message['subject']) + '<br></br>'
+    return headers
 
 
 def _get_message_html(message):
-    return "<hr><p>test original message html</p>"
+    body = None
+    if message.is_multipart():
+        for part in message.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get('Content-Disposition'))
+            if ctype == 'text/html' and 'attachment' not in cdispo:
+                body = part.get_payload()
+                break
+    else:
+        body = message.get_payload()
+
+    if body is not None:
+        return str(body)
+    else:
+        raise ValueError
 
 if __name__ == "__main__":
     main()
