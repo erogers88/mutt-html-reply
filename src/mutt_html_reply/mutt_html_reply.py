@@ -66,19 +66,30 @@ def main():
 
 
 def _get_header_html(message):
-    headers = ''
+    headers = '''\
+        <div>
+        <div style=&quot;border:none;border-top:solid;padding:3.0pt 0in 0in 0in&quot;>
+        <span style=font-size:11.0pt;font-family:&quot;Calibri&quot;,sans-serif>
+        '''
     if message['from'] is not None:
-        headers = '<b>From</b>: ' + html.escape(message['from']) + '<br></br>'
+        headers = headers + '<b>From:</b> ' + html.escape(message['from'].replace('"','')) + '<br></br>'
     if message['date'] is not None:
-        headers = headers + '<b>Date</b>: ' + html.escape(message['date']) + '<br></br>'
+        headers = headers + '<b>Sent:</b> ' + html.escape(message['date'].replace('"','')) + '<br></br>'
     if message['to'] is not None:
-        headers = headers + '<b>To</b>: ' + html.escape(message['to']) + '<br></br>'
+        headers = headers + '<b>To:</b> ' + html.escape(message['to'].replace('"','')) + '<br></br>'
     if message['cc'] is not None:
-        headers = headers + '<b>Cc</b>: ' + html.escape(message['cc']) + '<br></br>'
+        headers = headers + '<b>Cc:</b> ' + html.escape(message['cc'].replace('"','')) + '<br></br>'
     if message['subject'] is not None:
-        headers = headers + '<b>Subject</b>: ' + html.escape(message['subject']) + '<br></br>'
-    return headers
+        headers = headers + '<b>Subject:</b> ' + html.escape(message['subject'].replace('"','')) + '<br></br>'
 
+    headers = headers + '''\
+        </span>
+        </div>
+        </div>
+        '''
+
+
+    return headers
 
 def _get_message_html(message):
     body = ''
