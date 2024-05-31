@@ -81,32 +81,35 @@ def _get_header_html(message):
 
 
 def _get_message_html(message):
-    body = None
+    body = ''
     first_part = True
     if message.is_multipart():
         for part in message.walk():
             ctype = part.get_content_type()
             cdispo = str(part.get('Content-Disposition'))
-            cquote = str(part.get('Content-Transfer-Encoding'))
+            cte = str(part.get('Content-Transfer-Encoding'))
+            charsets = part.get_charsets()
             if ctype == 'text/html' and 'attachment' not in cdispo:
-                if first_part:
-                    if cquote == 'quoted-printable':
-                        body = part.get_payload(decode=True)
-                        first_part = False
-                    else:
-                        body = part.get_payload()
-                else:
-                    if cquote == 'quoted-printable':
-                        body = body + part.get_payload(decode=True)
-                    else:
-                        body = body + part.get_payload()
-    if body is not None:
-        try:
-            return body.decode("utf-8")
-        except:
-            return body
-    else:
-        raise ValueError
+                if charsets is not None:
+                    for charset in charsets:
+                        try:
+                            if charset == 'utf-8' and 'quoted-printable' not in cte and 'base64' not in cte:
+                                needs_decode = False
+                            else:
+                                needs_decode = True
+                            if needs_decode:
+                                if first_part:
+                                    body = part.get_payload(decode=needs_decode).decode(charset)
+                                else:
+                                    body = body + part.get_payload(decode=needs_decode).decode(charset)
+                            else:
+                                if first_part:
+                                    body = part.get_payload(decode=needs_decode)
+                                else:
+                                    body = body + part.get_payload(decode=needs_decode)
+                        except:
+                            continue
+    return body
 
 
 if __name__ == "__main__":
