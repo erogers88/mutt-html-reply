@@ -1,5 +1,6 @@
 import argparse
 import email
+from email.header import decode_header
 import html
 import sys
 from bs4 import BeautifulSoup, Doctype
@@ -80,7 +81,10 @@ def _get_header_html(message):
     if message['cc'] is not None:
         headers = headers + '<b>Cc:</b> ' + html.escape(message['cc'].replace('"','')) + '<br></br>'
     if message['subject'] is not None:
-        headers = headers + '<b>Subject:</b> ' + html.escape(message['subject'].replace('"','')) + '<br></br>'
+        decoded_subject_list = decode_header(message['subject'])
+        first_subject_line = decoded_subject_list[0]
+        decoded_subject = first_subject_line[0].decode(first_subject_line[1])
+        headers = headers + '<b>Subject:</b> ' + html.escape(decoded_subject) + '<br></br>'
 
     headers = headers + '''\
         </span>
@@ -94,32 +98,32 @@ def _get_header_html(message):
 def _get_message_html(message):
     body = ''
     first_part = True
-    if message.is_multipart():
-        for part in message.walk():
-            ctype = part.get_content_type()
-            cdispo = str(part.get('Content-Disposition'))
-            cte = str(part.get('Content-Transfer-Encoding'))
-            charsets = part.get_charsets()
-            if ctype == 'text/html' and 'attachment' not in cdispo:
-                if charsets is not None:
-                    for charset in charsets:
-                        try:
-                            if charset == 'utf-8' and 'quoted-printable' not in cte and 'base64' not in cte:
-                                needs_decode = False
+    for part in message.walk():
+        ctype = part.get_content_type()
+        cdispo = str(part.get('Content-Disposition'))
+        cte = str(part.get('Content-Transfer-Encoding'))
+        charsets = part.get_charsets()
+        if ctype == 'text/html' and 'attachment' not in cdispo:
+            if charsets is not None:
+                for charset in charsets:
+                    try:
+                        if charset == 'utf-8' and 'quoted-printable' not in cte and 'base64' not in cte:
+                            needs_decode = False
+                        else:
+                            needs_decode = True
+                        if needs_decode:
+                            if first_part:
+                                body = part.get_payload(decode=needs_decode).decode(charset)
                             else:
-                                needs_decode = True
-                            if needs_decode:
-                                if first_part:
-                                    body = part.get_payload(decode=needs_decode).decode(charset)
-                                else:
-                                    body = body + part.get_payload(decode=needs_decode).decode(charset)
+                                body = body + part.get_payload(decode=needs_decode).decode(charset)
+                        else:
+                            if first_part:
+                                body = part.get_payload(decode=needs_decode)
                             else:
-                                if first_part:
-                                    body = part.get_payload(decode=needs_decode)
-                                else:
-                                    body = body + part.get_payload(decode=needs_decode)
-                        except:
-                            continue
+                                body = body + part.get_payload(decode=needs_decode)
+                    except:
+                        continue
+
     return body
 
 
