@@ -1,4 +1,6 @@
 import argparse
+import datetime
+from zoneinfo import ZoneInfo
 import email
 from email.header import decode_header
 import html
@@ -27,6 +29,11 @@ def main():
                         type=argparse.FileType('w'),
                         default=sys.stdout,
                         help="HTML output, file or defaults to stdout")
+    parser.add_argument("-z", "--zoneinfo",
+                        nargs='?',
+                        type=str,
+                        default="America/New_York",
+                        help="ZoneInfo for header display, defaults to 'America/New_York'")
 
     args = parser.parse_args()
 
@@ -36,7 +43,7 @@ def main():
     # Get the original headers and html from the original email (rfc822 format)
     rfc822_original = email.message_from_file(args.message)
     html_original_msg = _get_message_html(rfc822_original)
-    html_original_headers = _get_header_html(rfc822_original)
+    html_original_headers = _get_header_html(rfc822_original, args.zoneinfo)
 
     # Convert HTML text to BeautifulSoup object and inline all CSS
 
@@ -66,7 +73,7 @@ def main():
     args.output.write(str(bs4_final))
 
 
-def _get_header_html(message):
+def _get_header_html(message, tz_str):
     headers = '''\
         <div>
         <div style=&quot;border:none;border-top:solid;padding:3.0pt 0in 0in 0in&quot;>
@@ -75,7 +82,18 @@ def _get_header_html(message):
     if message['from'] is not None:
         headers = headers + '<b>From:</b> ' + html.escape(message['from'].replace('"','')) + '<br></br>'
     if message['date'] is not None:
-        headers = headers + '<b>Sent:</b> ' + html.escape(message['date'].replace('"','')) + '<br></br>'
+        # Try to make it pretty
+        try:
+            header_date = datetime.datetime.strptime(html.escape(message['date'].replace('"','')),'%a, %d %b %Y %H:%M:%S%z').astimezone(ZoneInfo(tz_str))
+            header_date = str(header_date.strftime('%A, %B %d, %Y %I:%M %p'))
+        except:
+            pass
+        try:
+            header_date = datetime.datetime.strptime(html.escape(message['date'].replace('"','')),'%a, %d %b %Y %H:%M:%S %z').astimezone(ZoneInfo("America/New_York"))
+            header_date = str(header_date.strftime('%A, %B %d, %Y %I:%M %p'))
+        except:
+            header_date = message['date']
+        headers = headers + '<b>Sent:</b> ' + header_date +'<br></br>'
     if message['to'] is not None:
         headers = headers + '<b>To:</b> ' + html.escape(message['to'].replace('"','')) + '<br></br>'
     if message['cc'] is not None:
@@ -83,8 +101,11 @@ def _get_header_html(message):
     if message['subject'] is not None:
         decoded_subject_list = decode_header(message['subject'])
         first_subject_line = decoded_subject_list[0]
-        decoded_subject = first_subject_line[0].decode(first_subject_line[1])
-        headers = headers + '<b>Subject:</b> ' + html.escape(decoded_subject) + '<br></br>'
+        try:
+            decoded_subject = first_subject_line[0].decode(first_subject_line[1])
+            headers = headers + '<b>Subject:</b> ' + html.escape(decoded_subject) + '<br></br>'
+        except:
+            headers = headers + '<b>Subject:</b> ' + html.escape(message['subject']) + '<br></br>'
 
     headers = headers + '''\
         </span>
