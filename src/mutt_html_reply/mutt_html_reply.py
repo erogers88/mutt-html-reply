@@ -32,8 +32,8 @@ def main():
     parser.add_argument("-z", "--zoneinfo",
                         nargs='?',
                         type=str,
-                        default="America/New_York",
-                        help="ZoneInfo for header display, defaults to 'America/New_York'")
+                        default="UTC",
+                        help="ZoneInfo for header display, defaults to 'UTC'")
 
     args = parser.parse_args()
 
