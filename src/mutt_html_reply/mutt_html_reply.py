@@ -119,7 +119,9 @@ def _get_header_html(message, tz_str):
 def _get_message_html(message):
     body = ''
     first_part = True
+    related_images = {}
     for part in message.walk():
+        cid = str(part.get('Content-ID'))
         ctype = part.get_content_type()
         cdispo = str(part.get('Content-Disposition'))
         cte = str(part.get('Content-Transfer-Encoding'))
@@ -144,9 +146,14 @@ def _get_message_html(message):
                                 body = body + part.get_payload(decode=needs_decode)
                     except:
                         continue
-
+        if 'image/' in ctype and 'attachment' not in cdispo:
+            if cte == 'base64':
+                cid = cid.removeprefix('<')
+                cid = cid.removesuffix('>')
+                related_images[cid] = f'data:{ctype};{cte}, ' + part.get_payload(decode=False)
+    for cid, data in related_images.items():
+        body = body.replace(f'cid:{cid}', data)
     return body
-
 
 if __name__ == "__main__":
     main()
