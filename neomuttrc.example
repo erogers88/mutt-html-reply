@@ -1,0 +1,55 @@
+# This sample config can be used in a workflow in neomutt to reply
+# to an HTML email with your own HTML response.
+#
+# From the index, hit 'R' and you will be placed in the editor to
+# write a reply, with the original message attached.
+#
+# Write a reply (with markdown), save it, then hit 'm' from
+# the compose menu to convert your plaintext reply to HTML.
+#
+# Press 'o' to combine both sets of HTML into a single combined
+# HTML reply. Then you can send your message.
+#
+# Requirements:
+# 	pandoc
+# 	~/.pandoc-styling.css (for styling of reply)
+
+
+
+## Reply to HTML email and place original HTML as inline attachment
+macro index,pager R "\
+<shell-escape>touch /tmp/neomutt-original-email.msg<enter>\
+<shell-escape>rm /tmp/neomutt-original-email.msg<enter>\
+<save-message>/tmp/neomutt-original-email.msg<enter>y<enter>\
+<enter-command>unset include<enter>\
+<previous-entry><undelete-message><previous-entry>\
+<reply>\
+<enter-command>set include<enter>\
+<attach-file>/tmp/neomutt-original-email.msg<enter>\
+<toggle-disposition><toggle-unlink>" \
+"Reply to HTML email and place original message as attachment in new message"
+
+## Create multi-part alternative HTML in compose menu from markdown
+macro compose m "<enter-command>set pipe_decode<enter>\
+<first-entry>\
+<pipe-entry>pandoc -f markdown -t html5 --standalone --css ~/.pandoc-styling.css -H ~/.pandoc-styling.css -o /tmp/neomutt-msg.html --quiet<enter>\
+<enter-command>unset pipe_decode<enter>\
+<attach-file>/tmp/neomutt-msg.html<enter>\
+<toggle-disposition><toggle-unlink>\
+<tag-entry><first-entry><tag-entry><group-alternatives>" \
+"Create multi-part alternative HTML in compose menu from markdown"
+
+## Parse and add HTML original-email as quoted part
+macro compose o "\
+<first-entry>\
+<ungroup-attachment>\
+<shell-escape>mutt-html-reply -r /tmp/neomutt-msg.html -m /tmp/neomutt-original-email.msg -z 'America/New_York' -o /tmp/neomutt-combined-reply.html<enter>\
+<attach-file>/tmp/neomutt-combined-reply.html<enter>\
+<toggle-disposition><toggle-unlink>\
+<search>neomutt-msg.html<enter>\
+<detach-file>\
+<search>neomutt-original-email.msg<enter>\
+<detach-file>\
+<first-entry><tag-entry><search>neomutt-combined-reply.html<enter><tag-entry>\
+<group-alternatives>" \
+"Parse and add HTML original-email as quoted part"

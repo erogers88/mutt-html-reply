@@ -19,3 +19,7 @@ This command is meant to be embedded in a neomutt macro when replying, but can a
 ```
 mutt-html-reply [-h] [-m [MESSAGE]] [-r REPLY] [-o [OUTPUT]]
 ```
+
+## Sample Config
+
+See the [sample config](https://github.com/erogers88/mutt-html-reply/blob/master/neomuttrc.example) for suggested usage.
